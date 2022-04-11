@@ -27,10 +27,10 @@ Make sure to enable TCP Fast open on both sides:
 
 On server:
 
-    ./server
+    ./server [port]
 
 On Client:
 
-    ./client <server addr> <message size> <test count> <threads>
+    ./client <server addr> <port> <message size> <test count> <threads>
 
-for example, `./client 192.168.1.1 1024 1000 8` sends random packets of 1024 bytes 1000 times in 8 threads.
+for example, `./client 192.168.1.1 80 1024 1000 8` sends random packets of 1024 bytes 1000 times in 8 threads.

@@ -21,7 +21,8 @@
 
 #define SERVER_PORT "32345"
 
-int getsock(const std::string &server_addr, const std::vector<char> &msg_to_send)
+int getsock(const std::string &server_addr, const std::string &server_port,
+		const std::vector<char> &msg_to_send)
 {
     struct addrinfo hint, *res;
     
@@ -29,7 +30,7 @@ int getsock(const std::string &server_addr, const std::vector<char> &msg_to_send
     hint.ai_family = AF_UNSPEC;
     hint.ai_socktype = SOCK_STREAM;
     
-    int e = getaddrinfo(server_addr.c_str(), SERVER_PORT, &hint, &res);
+    int e = getaddrinfo(server_addr.c_str(), server_port.c_str(), &hint, &res);
     if( e == -1 )
     {
         cerror("getaddrinfo");
@@ -83,7 +84,8 @@ redo:
     return sock;
 }
 
-void send_recv(const std::string &server_addr, const int msg_size, std::atomic_int &count)
+void send_recv(const std::string &server_addr, const std::string &server_port,
+		const int msg_size, std::atomic_int &count)
 {
     std::vector<char> msg_buf(msg_size), recv_buf(msg_size);
     
@@ -94,7 +96,7 @@ void send_recv(const std::string &server_addr, const int msg_size, std::atomic_i
     while( count-- > 0 )
     {
         std::generate(msg_buf.begin(), msg_buf.end(), generator);
-        FD sock(getsock(server_addr, msg_buf));
+        FD sock(getsock(server_addr, server_port, msg_buf));
         shutdown(sock, SHUT_WR);
         ssize_t read_bytes = 0;
         while( read_bytes != msg_size )
@@ -119,21 +121,22 @@ void send_recv(const std::string &server_addr, const int msg_size, std::atomic_i
 
 int main(int argc, char *argv[])
 {
-    if( argc <= 4 )
+    if( argc <= 5 )
     {
-        std::cerr << "Usage: client [server addr] [msg size] [count] [thread]" << std::endl;
+        std::cerr << "Usage: client [server addr] [server port] [msg size] [count] [thread]" << std::endl;
         return EXIT_FAILURE;
     }
     
     std::string server_addr(argv[1]);
-    int msg_size = std::atoi(argv[2]);
-    std::atomic_int count(std::atoi(argv[3]));
-    int nthreads = std::atoi(argv[4]);
+    std::string server_port(argv[2]);
+    int msg_size = std::atoi(argv[3]);
+    std::atomic_int count(std::atoi(argv[4]));
+    int nthreads = std::atoi(argv[5]);
 
     std::vector<std::thread> threads;
     threads.reserve(nthreads);
     for( int i = 0; i < nthreads; ++i )
-        threads.push_back(std::thread(send_recv, server_addr, msg_size, std::ref(count)));
+        threads.push_back(std::thread(send_recv, server_addr, server_port,msg_size, std::ref(count)));
     std::for_each(threads.begin(), threads.end(), std::mem_fn(&std::thread::join));
 }
 
